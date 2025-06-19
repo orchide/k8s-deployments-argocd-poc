@@ -1,0 +1,47 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: local-application
+  namespace: argocd
+spec:
+  generators:
+    - list:
+        elements:
+          - name: kobo
+            repoURL: git@github.com/one-acre-fund/oaf-public-charts
+            chart: kobo
+            path: charts/kobo # relative to chart repo root
+            namespace: tools
+
+          - name: pgbouncer
+            repoURL: git@github.com/one-acre-fund/oaf-public-charts
+            chart: pgbouncer
+            path: charts/pgbouncer
+            namespace: database
+
+          - name: pgadmin
+            repoURL: git@github.com/orchide/pgAdminChart
+            chart: pgadmin
+            path: charts/pgadmin
+            namespace: database
+
+  template:
+    metadata:
+      name: "{{name}}-poc" # yields "pgadmin-poc", "redis-poc"
+    spec:
+      project: default
+      source:
+        repoURL: "{{repoURL}}"
+        targetRevision: main
+        chart: "{{chart}}"
+        path: "{{path}}"
+        helm:
+          valueFiles:
+            - values.yaml
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: "{{namespace}}"
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
